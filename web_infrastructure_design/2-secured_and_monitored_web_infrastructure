@@ -1,0 +1,99 @@
+# Distributed web infrastructure
+
+## Infrastructure Diagram
+
+```
+                         User
+                           |
+                         HTTPS
+                           |
+                           v
+                    www.foobar.com
+                           |
+                           v
+                     +-----------+
+                     | Firewall  |
+                     +-----+-----+
+                           |
+                           v
+                  +----------------+
+                  |    HAProxy     |
+                  | Load Balancer  |
+                  | SSL Certificate|
+                  |   Monitoring   |
+                  +-------+--------+
+                          |
+                     Round Robin
+                     /         \
+                    v           v
+             +-----------+   +-----------+
+             | Firewall  |   | Firewall  |
+             +-----+-----+   +-----+-----+
+                   |               |
+                   v               v
+            +-------------+   +-------------+
+            |  Server 1   |   |  Server 2   |
+            |-------------|   |-------------|
+            | Nginx       |   | Nginx       |
+            | App Server  |   | App Server  |
+            | App Files   |   | App Files   |
+            | MySQL       |   | MySQL       |
+            | Monitoring  |   | Monitoring  |
+            +-------------+   +-------------+
+                   \               /
+                    \             /
+                 +------------------+
+                 |  MySQL Primary   |
+                 +--------+---------+
+                          |
+                     Replication
+                          |
+                          v
+                 +------------------+
+                 |  MySQL Replica   |
+                 +------------------+
+```
+
+## Additional elements
+
+- Firewalls: Added to control and filter network traffic and protect infrastructure from unauthorised access
+- SSL Certificate: Added to allow HTTPS to be used and encrypt communication
+- Monitoring clients: Added so that each server cna collect and send information about it's health and performance to a monitoring service.
+
+## What are firewalls for?
+
+A firewall controls incoming and outgoing network traffic based on predefined rules. It can block unauthorized connections and only allow required traffic, such as HTTP/HTTPS or specific application/database connections.
+
+## Why HTTPS?
+
+HTTPS encrypts the communication between the user's browser and the web infrastructure. This helps protect sensitive information such as passwords, cookies, and other data from being intercepted or modified while in transit.
+
+The SSL certificate also allows the browser to verify that the website is using a valid certificate for www.foobar.com.
+
+## What is monitoring used for?
+
+Monitoring lets you know whether your infrastructure is healthy and how it is performing.
+
+This allows for better failure, error, delay detection.
+
+## How does the monitoring tool collect data?
+
+Each server has a monitoring client/agent installed. The monitoring client collects metrics and logs from the server and sends them to the monitoring service.
+
+## How would you monitor QPS?
+
+To monitor QPS, I would collect the Nginx access logs and use the monitoring service to count the number of requests received per second.
+
+## Issues
+
+### Why terminating SSL at the load balancer level is an issue?
+
+Terminating SSL means that HAProxy decrypts the incoming HTTPS traffic. If HAProxy then communicates with the servers using HTTP, sensitive data is no longer encrypted and could be exposed during a breach or attack.
+
+### Why having only one MySQL server capable of accepting writes is an issue?
+
+If the Primary database goes down, the application cannot perform write operations. Ideally, the Replica should be able to take over as the new Primary if the Primary fails.
+
+### Why having servers with all the same components (database, web server and application server) might be a problem?
+
+Having all the components on the same servers can cause them to compete for resources such as CPU, memory, and disk space. It also makes it harder to scale each component independently.
